@@ -8,17 +8,8 @@
 
 void gpuExp(int *A, int *B, int *C, int *sizePtr)
 {
-  // int i;
   int LIST_SIZE = *sizePtr;
-  // Rprintf("1.1\n");
-
-  // int *A = (int*)malloc(sizeof(int)*LIST_SIZE);
-  // int *B = (int*)malloc(sizeof(int)*LIST_SIZE);
-  // for(i = 0; i < LIST_SIZE; i++)
-  // {
-      // A[i] = i;
-      // B[i] = LIST_SIZE - i;
-      // }
+ 
 
   // Load the kernel source code into the array source_str
   FILE *fp;
@@ -31,7 +22,6 @@ void gpuExp(int *A, int *B, int *C, int *sizePtr)
   {
     fprintf(stderr, "Failed to load kernel.\n");
     return;
-    // exit(1);
   }
   source_str = (char*)malloc(MAX_SOURCE_SIZE);
   source_size = fread( source_str, 1, MAX_SOURCE_SIZE, fp);
@@ -47,6 +37,7 @@ void gpuExp(int *A, int *B, int *C, int *sizePtr)
   ret = clGetDeviceIDs( platform_id, CL_DEVICE_TYPE_DEFAULT, 1,
                         &device_id, &ret_num_devices);
 
+  
   // Create an OpenCL context
   Rprintf("device_id = %d\n", device_id);
   Rprintf("platform_id = %d\n", platform_id);
@@ -56,9 +47,11 @@ void gpuExp(int *A, int *B, int *C, int *sizePtr)
 
   cl_context context = clCreateContext( NULL, 1, &device_id, NULL, NULL, &ret);
 
+  
   // Create a command queue
   cl_command_queue command_queue = clCreateCommandQueue(context, device_id, 0, &ret);
 
+  
   // Create memory buffers on the device for each vector
   cl_mem a_mem_obj = clCreateBuffer(context, CL_MEM_READ_WRITE,
                                     LIST_SIZE * sizeof(int), NULL, &ret);
@@ -78,10 +71,10 @@ void gpuExp(int *A, int *B, int *C, int *sizePtr)
   // Create a program from the kernel source
   cl_program program = clCreateProgramWithSource(
     context, 1, (const char **)&source_str, (const size_t *)&source_size, &ret);
+  
+  
   Rprintf("CL_SUCCESS = %d\n", CL_SUCCESS);
   Rprintf("program generated = %d\n", ret);
-
-
   Rprintf("%s\n\n", source_str);
   Rprintf("source_size = %d\n", source_size);
 
@@ -99,20 +92,18 @@ void gpuExp(int *A, int *B, int *C, int *sizePtr)
   ret = clSetKernelArg(kernel, 1, sizeof(cl_mem), (void *)&b_mem_obj);
   ret = clSetKernelArg(kernel, 2, sizeof(cl_mem), (void *)&c_mem_obj);
 
+  
   // Execute the OpenCL kernel on the list
   size_t global_item_size = LIST_SIZE; // Process the entire lists
   size_t local_item_size = 64; // Divide work items into groups of 64
   ret = clEnqueueNDRangeKernel(command_queue, kernel, 1, NULL,
                                &global_item_size, &local_item_size, 0, NULL, NULL);
 
+  
   // Read the memory buffer C on the device to the local variable C
-  // int *C = (int*)malloc(sizeof(int)*LIST_SIZE);
   ret = clEnqueueReadBuffer(command_queue, c_mem_obj, CL_TRUE, 0,
                             LIST_SIZE * sizeof(int), C, 0, NULL, NULL);
 
-  // Display the result to the screen
-  // for(int i = 0; i < LIST_SIZE; i++)
-  //  printf("%d + %d = %d\n", A[i], B[i], C[i]);
 
   // Clean up
   ret = clFlush(command_queue);
@@ -124,28 +115,6 @@ void gpuExp(int *A, int *B, int *C, int *sizePtr)
   ret = clReleaseMemObject(c_mem_obj);
   ret = clReleaseCommandQueue(command_queue);
   ret = clReleaseContext(context);
-
-
-  // free(A);
-  // free(B);
-  // free(C);
-  // return 0;
-}
-
-
-
-
-void computeOnCPU(double *a, double *b, int *siz, double *c)
-{
-  clock_t t = clock();
-  for(int id = 0, idend = *siz; id < idend; ++id)
-  {
-    for(int u = 0, uend = 500; u < uend; ++u)
-    {
-      c[id] += cos(pow(fabs(tan(sin(a[id] + u) * cos(b[id] * u))), 3.14159) + u * c[id]);
-    }
-  }
-  Rprintf("timeCost = %d\n", clock() - t);
 }
 
 
